@@ -1,2 +1,2 @@
-# zana-assert
-A library for making assertions on types, classes, instances, states, and statuses
+# zana-check
+A library for checking types, classes, instances, states, and statuses
