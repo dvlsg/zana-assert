@@ -1,77 +1,42 @@
-import assert, {expect, AssertionError} from '../src/assert.js';
+import assert, {expect, AssertionError, Assert} from '../src/assert.js';
+import util from 'zana-util';
+import check from 'zana-check';
 let log = console.log.bind(log);
 
 describe('Assert', () => {
 
-    describe('true()', () => {
+    describe('empty()', () => {
 
-        it('should pass for boolean true', () => {
-            assert.true(true);
-        });
-
-        it('should pass for non-zero numbers', () => {
-            assert.true(1);
-            assert.true(-1);
-            assert.true(0.0001);
-        });
-
-        it('should pass for non-empty strings', () => {
-            assert.true('string!');
-            assert.true(' ');
-        });
-
-        it('should pass for arrays', () => {
-            assert.true([1,2,3]);
-            assert.true([]);
-        });
-
-        it('should pass for objects', () => {
-            assert.true({a: 1});
-            assert.true({});
-        });
-
-        it('should pass for functions', () => {
-            assert.true(() => {});
-        });
-
-        it('should pass for dates', () => {
-            assert.true(new Date());
-        });
-
-        it('should pass for regex', () => {
-            assert.true(/.*/);
-        });
-
-    });
-
-    describe('false()', () => {
-
-        it('should pass for boolean false', () => {
-            assert.false(false);
-        });
-
-        it('should pass for zero numbers', () => {
-            assert.false(0);
-            assert.false(+0);
-            assert.false(-0);
+        it('should pass for numbers of zero', () => {
+            assert.empty(0);
+            assert.empty(+0);
+            assert.empty(-0);
         });
 
         it('should pass for empty strings', () => {
-            assert.false('');
+            assert.empty('');
         });
 
-        it('should pass for NaN', () => {
-            assert.false(NaN);
+        it('should pass for empty arrays', () => {
+            assert.empty([]);
         });
 
-        it('should pass for null', () => {
-            assert.false(null);
+        it('should pass for empty objects', () => {
+            let obj = {};
+            assert.empty(obj);
+            obj.a = 1;
+            delete obj.a;
+            assert.empty(obj);
         });
 
-        it('should pass for undefined', () => {
-            assert.false(undefined);
+        xit('should pass for empty sets', () => {
+            assert.empty(new Set()); // requires a fix in zana-util, use Set.size
         });
 
+        xit('should pass for empty maps', () => {
+            assert.empty(new Map()); // also requires a fix in zana-util
+        });
+        
     });
 
     describe('equal()', () => {
@@ -167,37 +132,60 @@ describe('Assert', () => {
 
     });
 
-    describe('empty()', () => {
+    describe('false()', () => {
 
-        it('should pass for numbers of zero', () => {
-            assert.empty(0);
-            assert.empty(+0);
-            assert.empty(-0);
+        it('should pass for boolean false', () => {
+            assert.false(false);
+        });
+
+        it('should pass for zero numbers', () => {
+            assert.false(0);
+            assert.false(+0);
+            assert.false(-0);
         });
 
         it('should pass for empty strings', () => {
-            assert.empty('');
+            assert.false('');
         });
 
-        it('should pass for empty arrays', () => {
-            assert.empty([]);
+        it('should pass for NaN', () => {
+            assert.false(NaN);
         });
 
-        it('should pass for empty objects', () => {
-            let obj = {};
-            assert.empty(obj);
-            obj.a = 1;
-            delete obj.a;
-            assert.empty(obj);
+        it('should pass for null', () => {
+            assert.false(null);
         });
 
-        xit('should pass for empty sets', () => {
-            assert.empty(new Set()); // requires a fix in zana-util, use Set.size
+        it('should pass for undefined', () => {
+            assert.false(undefined);
         });
 
-        xit('should pass for empty maps', () => {
-            assert.empty(new Map()); // also requires a fix in zana-util
+    });
+
+    describe('is()', () => {
+
+        it('should pass for native types', () => {
+            assert.is('', String);
+            assert.is(0, Number);
+            assert.is(NaN, Number);
+            assert.is(/.*/, RegExp);
+            assert.is(new Set(), Set);
+            assert.is(new Map(), Map);
+            assert.is(new WeakSet(), WeakSet);
+            assert.is(new WeakMap(), WeakMap);
+            assert.is(new Date(), Date);
+            assert.is(new Error(), Error);
+            assert.is(null, null);
+            assert.is(undefined, undefined);
         });
+
+        it('should pass for custom types', () => {
+            assert.is(assert, Assert);
+            function C() {};
+            let c = new C();
+            assert.is(c, C);
+        });
+
     });
 
     describe('throws()', () => {
@@ -214,6 +202,47 @@ describe('Assert', () => {
         it('should pass for specific errors by name', () => {
             assert.throws(() => { throw new Error; }, 'Error');
             assert.throws(() => { assert.true(false); }, 'AssertionError');
+        });
+
+    });
+
+    describe('true()', () => {
+
+        it('should pass for boolean true', () => {
+            assert.true(true);
+        });
+
+        it('should pass for non-zero numbers', () => {
+            assert.true(1);
+            assert.true(-1);
+            assert.true(0.0001);
+        });
+
+        it('should pass for non-empty strings', () => {
+            assert.true('string!');
+            assert.true(' ');
+        });
+
+        it('should pass for arrays', () => {
+            assert.true([1,2,3]);
+            assert.true([]);
+        });
+
+        it('should pass for objects', () => {
+            assert.true({a: 1});
+            assert.true({});
+        });
+
+        it('should pass for functions', () => {
+            assert.true(() => {});
+        });
+
+        it('should pass for dates', () => {
+            assert.true(new Date());
+        });
+
+        it('should pass for regex', () => {
+            assert.true(/.*/);
         });
 
     });

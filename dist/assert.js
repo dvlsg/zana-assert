@@ -39,13 +39,14 @@ var log = console.log.bind(console);
 var toString = Object.prototype.toString;
 var regexType = /\s([a-zA-Z]+)/;
 var typename = function typename(item) {
-    if (item.prototype) item = item.prototype;
+    if (item && item.prototype) item = item.prototype;
     return toString.call(item).match(regexType)[1];
 };
 
 var ASSERT_TYPE = _Symbol('assert_type');
 
 function inspect(x) {
+    // to be expanded / improved in the future. possibly grab/use node's built in inspect from util.
     var type = _zanaUtil2['default'].getType(x);
     switch (type) {
         case _zanaUtil2['default'].types.number:
@@ -53,7 +54,6 @@ function inspect(x) {
             break;
     }
     return toString.call(x);
-    // return x.toString();
     // return JSON.stringify(x); // for now
 }
 
@@ -376,97 +376,10 @@ var Assert = (function () {
             this.expect(val1).to.be.type(val2);
         }
     }, {
-        key: 'isArray',
-
-        /**
-            Asserts that the provided value is an array type.
-              @param {any} value The value on which to check the assertion.
-            @throws {error} An error is thrown if the assertion fails.
-        */
-        value: function isArray(value) {
-            this.expect(value).to.be.an(Array);
-        }
-    }, {
-        key: 'isBoolean',
-
-        /**
-            Asserts that the provided value is a boolean type.
-              @param {any} value The value on which to check the assertion.
-            @throws {error} An error is thrown if the assertion fails.
-        */
-        value: function isBoolean(value) {
-            this['true'](function () {
-                return _zanaCheck2['default'].isBoolean(value);
-            });
-        }
-    }, {
-        key: 'isDate',
-
-        /**
-            Asserts that the provided value is a date type.
-              @param {any} value The value on which to check the assertion.
-            @throws {error} An error is thrown if the assertion fails.
-        */
-        value: function isDate(value) {
-            this['true'](function () {
-                return _zanaCheck2['default'].isDate(value);
-            });
-        }
-    }, {
-        key: 'isFunction',
-
-        /**
-            Asserts that the provided value is a function type.
-              @param {any} value The value on which to check the assertion.
-            @throws {error} An error is thrown if the assertion fails.
-        */
-        value: function isFunction(value) {
-            this['true'](function () {
-                return _zanaCheck2['default'].isFunction(value);
-            });
-        }
-    }, {
         key: 'isIterable',
         value: function isIterable(value) {
             this['true'](function () {
                 return _zanaCheck2['default'].isIterable(value);
-            });
-        }
-    }, {
-        key: 'isNumber',
-
-        /**
-            Asserts that the provided value is a number type.
-              @param {any} value The value on which to check the assertion.
-            @throws {error} An error is thrown if the assertion fails.
-        */
-        value: function isNumber(value) {
-            this['true'](function () {
-                return _zanaCheck2['default'].isNumber(value);
-            });
-        }
-    }, {
-        key: 'isObject',
-
-        /**
-            Asserts that the provided value is an object type.
-              @param {any} value The value on which to check the assertion.
-            @throws {error} An error is thrown if the assertion fails.
-        */
-        value: function isObject(value) {
-            this.expect(value).to.be.type(Object);
-        }
-    }, {
-        key: 'isString',
-
-        /**
-            Asserts that the provided value is a string type.
-              @param {any} value The value on which to check the assertion.
-            @throws {error} An error is thrown if the assertion fails.
-        */
-        value: function isString(value) {
-            this['true'](function () {
-                return _zanaCheck2['default'].isString(value);
             });
         }
     }, {

@@ -14,7 +14,7 @@ let log = console.log.bind(console);
 let toString = Object.prototype.toString;
 let regexType = /\s([a-zA-Z]+)/;
 let typename = (item) => {
-    if (item.prototype)
+    if (item && item.prototype)
         item = item.prototype;
     return toString.call(item).match(regexType)[1];
 };
@@ -22,6 +22,7 @@ let typename = (item) => {
 let ASSERT_TYPE = Symbol('assert_type');
 
 function inspect(x) {
+    // to be expanded / improved in the future. possibly grab/use node's built in inspect from util.
     let type = util.getType(x);
     switch(type) {
         case util.types.number:
@@ -30,7 +31,6 @@ function inspect(x) {
             break;
     }
     return toString.call(x);
-    // return x.toString();
     // return JSON.stringify(x); // for now
 }
 
@@ -300,78 +300,8 @@ export class Assert {
         this.expect(val1).to.be.type(val2);
     }
 
-    /**
-        Asserts that the provided value is an array type.
-
-        @param {any} value The value on which to check the assertion.
-        @throws {error} An error is thrown if the assertion fails.
-    */
-    isArray(value) {
-        this.expect(value).to.be.an(Array);
-    }
-
-    /**
-        Asserts that the provided value is a boolean type.
-
-        @param {any} value The value on which to check the assertion.
-        @throws {error} An error is thrown if the assertion fails.
-    */
-    isBoolean(value) {
-        this.true(() => check.isBoolean(value));
-    }
-
-    /**
-        Asserts that the provided value is a date type.
-
-        @param {any} value The value on which to check the assertion.
-        @throws {error} An error is thrown if the assertion fails.
-    */
-    isDate(value) {
-        this.true(() => check.isDate(value));
-    }
-
-    /**
-        Asserts that the provided value is a function type.
-
-        @param {any} value The value on which to check the assertion.
-        @throws {error} An error is thrown if the assertion fails.
-    */
-    isFunction(value) {
-        this.true(() => check.isFunction(value));
-    }
-
     isIterable(value) {
         this.true(() => check.isIterable(value));
-    }
-
-    /**
-        Asserts that the provided value is a number type.
-
-        @param {any} value The value on which to check the assertion.
-        @throws {error} An error is thrown if the assertion fails.
-    */
-    isNumber(value) {
-        this.true(() => check.isNumber(value));
-    }
-
-    /**
-        Asserts that the provided value is an object type.
-
-        @param {any} value The value on which to check the assertion.
-        @throws {error} An error is thrown if the assertion fails.
-    */
-    isObject(value) {
-        this.expect(value).to.be.type(Object);
-    }
-
-    /**
-        Asserts that the provided value is a string type.
-
-        @param {any} value The value on which to check the assertion.
-        @throws {error} An error is thrown if the assertion fails.
-    */
-    isString(value) {
-        this.true(() => check.isString(value));
     }
 
     /**
