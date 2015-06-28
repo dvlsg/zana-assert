@@ -14,17 +14,26 @@ var _createClass = require('babel-runtime/helpers/create-class')['default'];
 
 var _classCallCheck = require('babel-runtime/helpers/class-call-check')['default'];
 
-var _Object$defineProperty = require('babel-runtime/core-js/object/define-property')['default'];
-
 var _Symbol = require('babel-runtime/core-js/symbol')['default'];
+
+var _Symbol$toStringTag = require('babel-runtime/core-js/symbol/to-string-tag')['default'];
 
 var _interopRequireDefault = require('babel-runtime/helpers/interop-require-default')['default'];
 
-_Object$defineProperty(exports, '__esModule', {
+Object.defineProperty(exports, '__esModule', {
     value: true
 });
-
 exports.expect = expect;
+exports.truthy = truthy;
+exports.falsy = falsy;
+exports.equal = equal;
+exports.empty = empty;
+exports.nonEmpty = nonEmpty;
+exports.exists = exists;
+exports.instance = instance;
+exports.is = is;
+exports.throws = throws;
+/* eslint no-unused-vars: 0 */
 
 var _zanaUtil = require('zana-util');
 
@@ -45,38 +54,47 @@ var typename = function typename(item) {
 
 var ASSERT_TYPE = _Symbol('assert_type');
 
-function inspect(x) {
-    // to be expanded / improved in the future. possibly grab/use node's built in inspect from util.
-    var type = _zanaUtil2['default'].getType(x);
-    switch (type) {
-        case _zanaUtil2['default'].types.number:
-            if (isNaN(x)) return 'NaN';
-            break;
-    }
-    return toString.call(x);
-    // return JSON.stringify(x); // for now
-}
-
 var AssertionError = (function (_Error) {
 
     // silly way of properly extending an error
 
-    function AssertionError(message) {
+    function AssertionError(_ref) {
+        var message = _ref.message;
+        var _ref$actual = _ref.actual;
+        var actual = _ref$actual === undefined ? null : _ref$actual;
+        var _ref$expected = _ref.expected;
+        var expected = _ref$expected === undefined ? null : _ref$expected;
+
         _classCallCheck(this, AssertionError);
 
         _get(Object.getPrototypeOf(AssertionError.prototype), 'constructor', this).call(this);
         Error.captureStackTrace(this, this.constructor);
-        _Object$defineProperty(this, 'message', {
+        Object.defineProperty(this, 'message', {
             value: message
         });
+        if (actual) {
+            Object.defineProperty(this, 'actual', {
+                value: actual
+            });
+        }
+        if (expected) {
+            Object.defineProperty(this, 'expected', {
+                value: expected
+            });
+        }
     }
 
     _inherits(AssertionError, _Error);
 
     _createClass(AssertionError, [{
         key: 'name',
-        get: function () {
+        get: function get() {
             return this.constructor.name;
+        }
+    }, {
+        key: _Symbol$toStringTag,
+        get: function get() {
+            return 'AssertionError';
         }
     }]);
 
@@ -86,41 +104,22 @@ var AssertionError = (function (_Error) {
 exports.AssertionError = AssertionError;
 
 var Assertion = (function () {
-    function Assertion(_ref) {
-        var given = _ref.given;
-        var _ref$test = _ref.test;
-        var test = _ref$test === undefined ? function () {} : _ref$test;
-        var _ref$expected = _ref.expected;
-        var expected = _ref$expected === undefined ? null : _ref$expected;
-        var _ref$flipped = _ref.flipped;
-        var flipped = _ref$flipped === undefined ? false : _ref$flipped;
-        var _ref$message = _ref.message;
-        var message = _ref$message === undefined ? null : _ref$message;
+    function Assertion(_ref2) {
+        var given = _ref2.given;
+        var _ref2$test = _ref2.test;
+        var test = _ref2$test === undefined ? function () {} : _ref2$test;
+        var _ref2$expected = _ref2.expected;
+        var expected = _ref2$expected === undefined ? null : _ref2$expected;
+        var _ref2$flipped = _ref2.flipped;
+        var flipped = _ref2$flipped === undefined ? false : _ref2$flipped;
+        var _ref2$message = _ref2.message;
+        var message = _ref2$message === undefined ? null : _ref2$message;
 
         _classCallCheck(this, Assertion);
 
-        this.message = message; // override if necessary
-        this.given = given;
-        this.message = 'Expected ' + inspect(this.given);
-
-        // try {
-        //     if (given instanceof Function) {
-        //         this.fn = given;
-        //         this.given = given();
-        //     }
-        //     else {
-        //         this.given = given;
-        //     }
-        //     if (!this.message)
-        //         this.message = `Expected ${inspect(this.given)}`;
-        // }
-        // catch(e) {
-        //     this.error = e;
-        //     // let functionString = given.toString();
-        //     // let functionBody = functionString.substring(functionString.indexOf("{") + 1, functionString.lastIndexOf("}")).trim();
-        //     // this.message = `Expected ${functionBody}`;
-        //     this.message = `Expected function`;
-        // }
+        this.message = message; // override if necessary? considering dropping
+        this.actual = given;
+        if (!this.message) this.message = 'Expected ' + _zanaUtil2['default'].inspect(this.actual);
         this.test = test;
         this.expected = expected;
         this.flipped = flipped;
@@ -146,150 +145,167 @@ var Assertion = (function () {
         }
     }, {
         key: ASSERT_TYPE,
-        value: function (type) {
+        value: function value(type) {
             var name = _zanaCheck2['default'].isString(type) ? type : typename(type);
             this.message += ' ' + name + '!';
-            this.test = function (x, y) {
-                return _zanaCheck2['default'].is(x, y);
-            };
             this.expected = type;
-            this.assert();
+            var passed = _zanaCheck2['default'].is(this.actual, this.expected) ^ this.flipped;
+            if (!passed) {
+                throw new AssertionError({
+                    message: this.message,
+                    actual: _zanaUtil2['default'].inspect(this.actual),
+                    expected: name // tbd if this is right
+                });
+            }
+        }
+    }, {
+        key: 'instance',
+        value: function instance(type) {
+            this.message += ' instance of ' + typename(type) + '!';
+            this.expected = type;
+            if (!_zanaCheck2['default'].instance(this.actual, this.expected) ^ this.flipped) {
+                throw new AssertionError({
+                    message: this.message,
+                    actual: typename(this.actual),
+                    expected: typename(this.expected)
+                });
+            }
         }
     }, {
         key: 'true',
         value: function _true() {
             this.message += ' truthy!';
-            this.test = function (x) {
-                return x ? true : false;
-            };
-            // this.expected = true;
-            this.assert();
+            var passed = !!this.actual;
+            if (!(passed ^ this.flipped)) {
+                throw new AssertionError({
+                    message: this.message
+                });
+            }
         }
     }, {
         key: 'false',
         value: function _false() {
             this.message += ' falsy!';
-            this.test = function (x) {
-                return x ? false : true;
-            };
-            // this.expected = false;
-            this.assert();
+            var passed = !this.actual;
+            if (!(passed ^ this.flipped)) {
+                throw new AssertionError({
+                    message: this.message
+                });
+            }
         }
     }, {
         key: 'empty',
         value: function empty() {
             this.message += ' empty!';
-            this.test = function (x) {
-                return _zanaCheck2['default'].empty(x);
-            };
-            this.expected = true;
-            this.assert();
+            var passed = _zanaCheck2['default'].empty(this.actual);
+            if (!(passed ^ this.flipped)) {
+                throw new AssertionError({
+                    message: this.message
+                });
+            }
         }
     }, {
         key: 'exist',
         value: function exist() {
             this.message += ' exist!';
-            this.test = function (x) {
-                return _zanaCheck2['default'].exists(x);
-            };
-            this.expected = true;
-            this.assert();
+            var passed = _zanaCheck2['default'].exists(this.actual);
+            if (!(passed ^ this.flipped)) {
+                throw new AssertionError({
+                    message: this.message
+                });
+            }
         }
     }, {
         key: 'throw',
         value: function _throw() {
-            var _this = this;
+            var option = arguments[0] === undefined ? null : arguments[0];
 
-            var type = arguments[0] === undefined ? null : arguments[0];
-
-            var name = null;
-            if (type) {
-                if (_zanaCheck2['default'].isString(type)) {
-                    name = type; // assume it's already the right name
-                } else {
-                    if (type.name) {
-                        // error which has a name
-                        name = type.name;
-                    } else {
-                        // what to do with this one?
-                        log('in here');
-                        name = _zanaUtil2['default'].getType(type);
-                    }
-                }
-            } else name = 'an error';
-            this.message += ' throw ' + name + '!';
-
-            this.test = function () {
-                try {
-                    _this.given();
-                } catch (e) {
-                    _this.error = e;
-                }
-                if (!_this.error) // no error was thrown
-                    return false;
-                if (!type) // don't care what type of error we caught, just that we caught one
-                    return true;
-                if (type.prototype && _zanaCheck2['default'].is(type, _this.error)) return true;
-                if (_zanaCheck2['default'].isString(type)) {
-                    if (_this.error.name && _this.error.name.toLowerCase() === name.toLowerCase()) return true;
-                }
-                return false;
-            };
-            this.expected = true;
-            this.assert();
+            var passed = false;
+            var err = null;
+            try {
+                this.actual();
+                this.actual = null;
+            } catch (caught) {
+                err = caught;
+            }
+            var type = _zanaUtil2['default'].getType(option);
+            switch (type) {
+                case _zanaUtil2['default'].types.undefined:
+                case _zanaUtil2['default'].types['null']:
+                    passed = !!err;
+                    this.message += ' throw an error!';
+                    this.actual = _zanaUtil2['default'].inspect(err);
+                    this.expected = '[Error]';
+                    break;
+                case _zanaUtil2['default'].types.string:
+                    passed = err && err.message && err.message.indexOf(option) > -1;
+                    this.message += ' throw an error with a message containing ' + _zanaUtil2['default'].inspect(option);
+                    this.actual = err;
+                    this.expected = _zanaUtil2['default'].inspect(option);
+                    break;
+                case _zanaUtil2['default'].types.regexp:
+                    passed = err && err.message && option.test(err.message);
+                    this.message += ' throw an error matching regex ' + option + '!';
+                    this.actual = err;
+                    this.expected = option.toString();
+                    break;
+                default:
+                    passed = _zanaCheck2['default'].instance(err, option);
+                    this.message += ' throw instance of ' + typename(option);
+                    this.actual = typename(err);
+                    this.expected = typename(option);
+                    break;
+            }
+            if (!(passed ^ this.flipped)) {
+                throw new AssertionError({
+                    message: this.message,
+                    actual: this.actual,
+                    expected: this.expected
+                });
+            }
         }
     }, {
         key: 'equal',
         value: function equal(target) {
-            this.message += ' equal ' + inspect(target) + '!';
+            this.message += ' equal ' + _zanaUtil2['default'].inspect(target) + '!';
             this.expected = target;
-            this.test = function (x, y) {
-                return _zanaUtil2['default'].equals(x, y);
-            };
-            this.assert();
-        }
-    }, {
-        key: 'assert',
-        value: function assert() {
-            var result = this.test(this.given, this.expected);
-            if (this.flipped) result = !result;
-            if (!result) {
-                if (this.message) throw new AssertionError(this.message); // + ` Received ${result}`);
-                else {
-                    var functionString = this.test.toString();
-                    var functionBody = functionString.substring(functionString.indexOf('{') + 1, functionString.lastIndexOf('}')).trim();
-                    throw new AssertionError('Assertion failed: ' + functionBody);
-                }
+            var passed = _zanaUtil2['default'].equals(this.actual, this.expected);
+            if (!(passed ^ this.flipped)) {
+                throw new AssertionError({
+                    message: this.message,
+                    actual: _zanaUtil2['default'].inspect(this.actual),
+                    expected: _zanaUtil2['default'].inspect(this.expected)
+                });
             }
         }
     }, {
         key: 'not',
-        get: function () {
+        get: function get() {
             this.message += ' not';
             this.flipped = !this.flipped;
             return this;
         }
     }, {
         key: 'is',
-        get: function () {
+        get: function get() {
             this.message += ' is';
             return this;
         }
     }, {
         key: 'to',
-        get: function () {
+        get: function get() {
             this.message += ' to';
             return this;
         }
     }, {
         key: 'be',
-        get: function () {
+        get: function get() {
             this.message += ' be';
             return this;
         }
     }, {
         key: 'of',
-        get: function () {
+        get: function get() {
             this.message += ' of';
             return this;
         }
@@ -300,126 +316,136 @@ var Assertion = (function () {
 
 exports.Assertion = Assertion;
 
-var Assert = (function () {
-    function Assert() {
-        _classCallCheck(this, Assert);
-    }
+/**
+    Returns a new assertion containing the given value.
 
-    _createClass(Assert, [{
-        key: 'true',
-        value: function _true(value) {
-            return this.expect(value).to.be['true']();
-        }
-    }, {
-        key: 'false',
-        value: function _false(value) {
-            return this.expect(value).to.be['false']();
-        }
-    }, {
-        key: 'equal',
-        value: function equal(val1, val2) {
-            return this.expect(val1).to.equal(val2);
-        }
-    }, {
-        key: 'expect',
-        value: function expect(value) {
-            return new Assertion({
-                given: value
-            });
-        }
-    }, {
-        key: 'empty',
+    @param {any} val The value to attach to the assertion.
+*/
 
-        /**
-            Asserts that the provided value is empty.
-              @param {any} value The value on which to check the assertion.
-            @throws {error} An error is thrown if the assertion fails.
-        */
-        value: function empty(value) {
-            return this.expect(value).to.be.empty();
-            // this.true(() => check.empty(value));
-        }
-    }, {
-        key: 'nonEmpty',
-
-        /**
-            Asserts that the provided value is not empty.
-              @param {any} value The value on which to check the assertion.
-            @throws {error} An error is thrown if the assertion fails.
-        */
-        value: function nonEmpty(value) {
-            this['false'](function () {
-                return _zanaCheck2['default'].empty(value);
-            });
-        }
-    }, {
-        key: 'exists',
-
-        /**
-            Asserts that the provided value is not equal to null or undefined.
-              @param {any} value The value to check for null or undefined values.
-            @throws {error} An error is thrown if the value is equal to null or undefined.
-        */
-        value: function exists(value) {
-            this.expect(value).to.exist();
-        }
-    }, {
-        key: 'is',
-
-        /**
-            Asserts that the provided values are of the same type.
-              @param {any} val1 The first value for type comparison.
-            @param {any} val2 The second value for type comparison.
-            @throws {error} An error is thrown if the types of the values are not equal.
-        */
-        value: function is(val1, val2) {
-            this.expect(val1).to.be.type(val2);
-        }
-    }, {
-        key: 'isIterable',
-        value: function isIterable(value) {
-            this['true'](function () {
-                return _zanaCheck2['default'].isIterable(value);
-            });
-        }
-    }, {
-        key: 'isValue',
-
-        /**
-            Asserts that the provided value is a value (non-reference) type.
-              @param {any} value The value on which to check the assertion.
-            @returns {boolean} True, if the assertion passes.
-            @throws {error} An error is thrown if the assertion fails.
-        */
-        value: function isValue(value) {
-            // useful? consider deprecating.
-            this['true'](function () {
-                return _zanaCheck2['default'].isValue(value);
-            });
-        }
-    }, {
-        key: 'throws',
-        value: function throws(fn) {
-            var errType = arguments[1] === undefined ? null : arguments[1];
-
-            return this.expect(fn).to['throw'](errType);
-        }
-    }]);
-
-    return Assert;
-})();
-
-exports.Assert = Assert;
-
-Assert.prototype.a = Assert.prototype.type;
-Assert.prototype.an = Assert.prototype.type;
-Assert.prototype.be = Assert.prototype.equal;
-
-function expect(value) {
+function expect(val) {
     return new Assertion({
-        given: value
+        given: val
     });
 }
 
-var assert = new Assert();
-exports['default'] = assert;
+/**
+    Asserts that the provided values is truthy.
+
+    @param {any} val The value for falsy comparison.
+    @throws {error} An error is thrown if the values are not equal.
+*/
+
+function truthy(val) {
+    expect(val).to.be['true']();
+}
+
+/**
+    Asserts that the provided values is falsy.
+
+    @param {any} val The value for falsy comparison.
+    @throws {error} An error is thrown if the values was not falsy.
+*/
+
+function falsy(val) {
+    expect(val).to.be['false']();
+}
+
+/**
+    Asserts that the provided values are equal.
+
+    @param {any} val1 The first value for equality comparison.
+    @param {any} val2 The second value for equality comparison.
+    @throws {error} An error is thrown if the values are not equal.
+*/
+
+function equal(val1, val2) {
+    expect(val1).to.equal(val2);
+}
+
+/**
+    Asserts that the provided value is empty.
+
+    @param {any} value The value on which to check the assertion.
+    @throws {error} An error is thrown if the assertion fails.
+*/
+
+function empty(value) {
+    expect(value).to.be.empty();
+}
+
+/**
+    Asserts that the provided value is not empty.
+
+    @param {any} value The value on which to check the assertion.
+    @throws {error} An error is thrown if the assertion fails.
+*/
+
+function nonEmpty(value) {
+    expect(value).to.not.be.empty();
+}
+
+/**
+    Asserts that the provided value is not equal to null or undefined.
+
+    @param {any} value The value to check for null or undefined values.
+    @throws {error} An error is thrown if the value is equal to null or undefined.
+*/
+
+function exists(value) {
+    expect(value).to.exist();
+}
+
+/**
+    Asserts that the first argument is an instance of the second argument.
+
+    @param {any} arg1 The first value for instanceof assertion.
+    @param {Function} arg2 The second value for instanceof assertion.
+    @throws {error} An error is thrown if arg1 is not an instance of arg2.
+*/
+
+function instance(arg1, arg2) {
+    expect(arg1).to.be.instance(arg2);
+}
+
+/**
+    Asserts that the provided values are of the same type.
+
+    @param {any} val1 The first value for type comparison.
+    @param {any} val2 The second value for type comparison.
+    @throws {error} An error is thrown if the types of the values are not equal.
+*/
+
+function is(val1, val2) {
+    expect(val1).to.be.type(val2);
+}
+
+/**
+    Asserts that the provided value is a value (non-reference) type.
+
+    @param {any} value The value on which to check the assertion.
+    @returns {boolean} True, if the assertion passes.
+    @throws {error} An error is thrown if the assertion fails.
+*/
+
+function throws(fn) {
+    var errType = arguments[1] === undefined ? null : arguments[1];
+
+    expect(fn).to['throw'](errType);
+}
+
+exports['default'] = {
+    empty: empty,
+    equal: equal,
+    'equals': equal,
+    exists: exists,
+    expect: expect,
+    'false': falsy,
+    falsy: falsy,
+    instance: instance,
+    is: is,
+    nonEmpty: nonEmpty,
+    'ok': truthy,
+    throws: throws,
+    'true': truthy,
+    truthy: truthy
+};

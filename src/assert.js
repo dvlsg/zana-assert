@@ -6,6 +6,8 @@
 */
 "use strict";
 
+/* eslint no-unused-vars: 0 */
+
 import util from 'zana-util';
 import check from 'zana-check';
 
@@ -21,32 +23,33 @@ let typename = (item) => {
 
 let ASSERT_TYPE = Symbol('assert_type');
 
-function inspect(x) {
-    // to be expanded / improved in the future. possibly grab/use node's built in inspect from util.
-    let type = util.getType(x);
-    switch(type) {
-        case util.types.number:
-            if (isNaN(x))
-                return 'NaN';
-            break;
-    }
-    return toString.call(x);
-    // return JSON.stringify(x); // for now
-}
-
 export class AssertionError extends Error {
 
     // silly way of properly extending an error
-    constructor(message) {
+    constructor({message, actual = null, expected = null}) {
         super();
         Error.captureStackTrace(this, this.constructor);
         Object.defineProperty(this, 'message', {
             value: message
         });
+        if (actual) {
+            Object.defineProperty(this, 'actual', {
+                value: actual
+            });
+        }
+        if (expected) {
+            Object.defineProperty(this, 'expected', {
+                value: expected
+            });
+        }
     }
 
     get name() {
         return this.constructor.name;
+    }
+
+    get [Symbol.toStringTag]() {
+        return 'AssertionError';
     }
 }
 
@@ -66,28 +69,10 @@ export class Assertion {
         , flipped  = false
         , message  = null
     }) {
-        this.message = message; // override if necessary
-        this.given = given;
-        this.message = `Expected ${inspect(this.given)}`;
-
-        // try {
-        //     if (given instanceof Function) {
-        //         this.fn = given;
-        //         this.given = given();
-        //     }
-        //     else {
-        //         this.given = given;
-        //     }
-        //     if (!this.message)
-        //         this.message = `Expected ${inspect(this.given)}`;
-        // }
-        // catch(e) {
-        //     this.error = e;
-        //     // let functionString = given.toString();
-        //     // let functionBody = functionString.substring(functionString.indexOf("{") + 1, functionString.lastIndexOf("}")).trim();
-        //     // this.message = `Expected ${functionBody}`;
-        //     this.message = `Expected function`;
-        // }
+        this.message = message; // override if necessary? considering dropping
+        this.actual = given;
+        if (!this.message)
+            this.message = `Expected ${util.inspect(this.actual)}`;
         this.test = test;
         this.expected = expected;
         this.flipped = flipped;
@@ -137,199 +122,249 @@ export class Assertion {
     [ASSERT_TYPE](type: any) {
         let name = check.isString(type) ? type : typename(type);
         this.message += ` ${name}!`;
-        this.test = (x, y) => check.is(x, y);
         this.expected = type;
-        this.assert();
+        let passed = check.is(this.actual, this.expected) ^ this.flipped;
+        if (!passed) {
+            throw new AssertionError({
+                  message  : this.message
+                , actual   : util.inspect(this.actual)
+                , expected : name // tbd if this is right
+            });
+        }
+    }
+
+    instance(type: any) {
+        this.message += ` instance of ${typename(type)}!`;
+        this.expected = type;
+        if (!check.instance(this.actual, this.expected) ^ this.flipped) {
+            throw new AssertionError({
+                  message  : this.message
+                , actual   : typename(this.actual)
+                , expected : typename(this.expected)
+            });
+        }
     }
 
     true() {
         this.message += ' truthy!';
-        this.test = (x) => x ? true : false;
-        // this.expected = true;
-        this.assert();
+        let passed = !!this.actual;
+        if (!(passed ^ this.flipped)) {
+            throw new AssertionError({
+                message: this.message
+            });
+        }
     }
 
     false() {
         this.message += ' falsy!';
-        this.test = (x) => x ? false : true;
-        // this.expected = false;
-        this.assert();
+        let passed = !this.actual;
+        if (!(passed ^ this.flipped)) {
+            throw new AssertionError({
+                message: this.message
+            });
+        }
     }
 
     empty() {
         this.message += ' empty!';
-        this.test = (x) => check.empty(x);
-        this.expected = true;
-        this.assert();
+        let passed = check.empty(this.actual);
+        if (!(passed ^ this.flipped)) {
+            throw new AssertionError({
+                message: this.message
+            });
+        }
     }
 
     exist() {
         this.message += ' exist!';
-        this.test = x => check.exists(x);
-        this.expected = true;
-        this.assert();
+        let passed = check.exists(this.actual);
+        if (!(passed ^ this.flipped)) {
+            throw new AssertionError({
+                message: this.message
+            });
+        }
     }
 
-    ['throw'](type = null) {
-        let name = null;
-        if (type) {
-            if (check.isString(type)) {
-                name = type; // assume it's already the right name
-            }
-            else {
-                if (type.name) { // error which has a name
-                    name = type.name;
-                }
-                else {// what to do with this one?
-                    log('in here');
-                    name = util.getType(type);
-                }
-            }
+    ['throw'](option = null) {
+        let passed = false;
+        let err = null;
+        try {
+            this.actual();
+            this.actual = null;
         }
-        else
-            name = 'an error';
-        this.message += ` throw ${name}!`;
-
-        this.test = () => {
-            try {
-                this.given();
-            }
-            catch(e) {
-                this.error = e;
-            }
-            if (!this.error) // no error was thrown
-                return false;
-            if (!type) // don't care what type of error we caught, just that we caught one
-                return true;
-            if (type.prototype && check.is(type, this.error))
-                return true;
-            if (check.isString(type)) {
-                if (this.error.name && this.error.name.toLowerCase() === name.toLowerCase())
-                    return true;
-            }
-            return false;
-        };
-        this.expected = true;
-        this.assert();
+        catch(caught) {
+            err = caught;
+        }
+        let type = util.getType(option);
+        switch (type) {
+            case util.types.undefined:
+            case util.types.null:
+                passed = !!err;
+                this.message += ` throw an error!`;
+                this.actual = util.inspect(err);
+                this.expected = '[Error]';
+                break;
+            case util.types.string:
+                passed = err && err.message && err.message.indexOf(option) > -1;
+                this.message += ` throw an error with a message containing ${util.inspect(option)}`;
+                this.actual = err;
+                this.expected = util.inspect(option);
+                break;
+            case util.types.regexp:
+                passed = err && err.message && option.test(err.message);
+                this.message += ` throw an error matching regex ${option}!`;
+                this.actual = err;
+                this.expected = option.toString();
+                break;
+            default:
+                passed = check.instance(err, option);
+                this.message += ` throw instance of ${typename(option)}`;
+                this.actual = typename(err);
+                this.expected = typename(option);
+                break;
+        }
+        if (!(passed ^ this.flipped)) {
+            throw new AssertionError({
+                  message  : this.message
+                , actual   : this.actual
+                , expected : this.expected
+            });
+        }
     }
 
     equal(target) {
-        this.message += ` equal ${inspect(target)}!`;
+        this.message += ` equal ${util.inspect(target)}!`;
         this.expected = target;
-        this.test = (x, y) => util.equals(x, y);
-        this.assert();
-    }
-
-    assert() {
-        let result = this.test(this.given, this.expected);
-        if (this.flipped)
-            result = !result;
-        if (!result) {
-            if(this.message)
-                throw new AssertionError(this.message); // + ` Received ${result}`);
-            else {
-                let functionString = this.test.toString();
-                let functionBody = functionString.substring(functionString.indexOf("{") + 1, functionString.lastIndexOf("}")).trim();
-                throw new AssertionError(`Assertion failed: ${functionBody}`);
-            }
+        let passed = util.equals(this.actual, this.expected);
+        if (!(passed ^ this.flipped)) {
+            throw new AssertionError({
+                  message  : this.message
+                , actual   : util.inspect(this.actual)
+                , expected : util.inspect(this.expected)
+            });
         }
     }
 }
 
-export class Assert {
+/**
+    Returns a new assertion containing the given value.
 
-    constructor() {}
-
-    true(value) {
-        return this.expect(value).to.be.true();
-    }
-
-    false(value) {
-        return this.expect(value).to.be.false();
-    }
-
-    equal(val1, val2) {
-        return this.expect(val1).to.equal(val2);
-    }
-
-    expect(value) {
-        return new Assertion({
-            given : value
-        });
-    }
-
-    /**
-        Asserts that the provided value is empty.
-
-        @param {any} value The value on which to check the assertion.
-        @throws {error} An error is thrown if the assertion fails.
-    */
-    empty(value) {
-        return this.expect(value).to.be.empty();
-        // this.true(() => check.empty(value));
-    }
-
-    /**
-        Asserts that the provided value is not empty.
-
-        @param {any} value The value on which to check the assertion.
-        @throws {error} An error is thrown if the assertion fails.
-    */
-    nonEmpty(value) {
-        this.false(() => check.empty(value));
-    }
-
-    /**
-        Asserts that the provided value is not equal to null or undefined.
-
-        @param {any} value The value to check for null or undefined values.
-        @throws {error} An error is thrown if the value is equal to null or undefined.
-    */
-    exists(value) {
-        this.expect(value).to.exist();
-    }
-
-    /**
-        Asserts that the provided values are of the same type.
-
-        @param {any} val1 The first value for type comparison.
-        @param {any} val2 The second value for type comparison.
-        @throws {error} An error is thrown if the types of the values are not equal.
-    */
-    is(val1, val2) {
-        this.expect(val1).to.be.type(val2);
-    }
-
-    isIterable(value) {
-        this.true(() => check.isIterable(value));
-    }
-
-    /**
-        Asserts that the provided value is a value (non-reference) type.
-
-        @param {any} value The value on which to check the assertion.
-        @returns {boolean} True, if the assertion passes.
-        @throws {error} An error is thrown if the assertion fails.
-    */
-    isValue(value) {
-        // useful? consider deprecating.
-        this.true(() => check.isValue(value));
-    }
-
-    throws(fn, errType = null) {
-        return this.expect(fn).to.throw(errType);
-    }
-}
-
-Assert.prototype.a = Assert.prototype.type;
-Assert.prototype.an = Assert.prototype.type;
-Assert.prototype.be = Assert.prototype.equal;
-
-export function expect(value) {
+    @param {any} val The value to attach to the assertion.
+*/
+export function expect(val) {
     return new Assertion({
-        given: value
+        given : val
     });
 }
 
-let assert = new Assert();
-export default assert;
+/**
+    Asserts that the provided values is truthy.
+
+    @param {any} val The value for falsy comparison.
+    @throws {error} An error is thrown if the values are not equal.
+*/
+export function truthy(val) {
+    expect(val).to.be.true();
+}
+
+/**
+    Asserts that the provided values is falsy.
+
+    @param {any} val The value for falsy comparison.
+    @throws {error} An error is thrown if the values was not falsy.
+*/
+export function falsy(val) {
+    expect(val).to.be.false();
+}
+
+/**
+    Asserts that the provided values are equal.
+
+    @param {any} val1 The first value for equality comparison.
+    @param {any} val2 The second value for equality comparison.
+    @throws {error} An error is thrown if the values are not equal.
+*/
+export function equal(val1, val2) {
+    expect(val1).to.equal(val2);
+}
+
+/**
+    Asserts that the provided value is empty.
+
+    @param {any} value The value on which to check the assertion.
+    @throws {error} An error is thrown if the assertion fails.
+*/
+export function empty(value) {
+    expect(value).to.be.empty();
+}
+
+/**
+    Asserts that the provided value is not empty.
+
+    @param {any} value The value on which to check the assertion.
+    @throws {error} An error is thrown if the assertion fails.
+*/
+export function nonEmpty(value) {
+    expect(value).to.not.be.empty();
+}
+
+/**
+    Asserts that the provided value is not equal to null or undefined.
+
+    @param {any} value The value to check for null or undefined values.
+    @throws {error} An error is thrown if the value is equal to null or undefined.
+*/
+export function exists(value) {
+    expect(value).to.exist();
+}
+
+/**
+    Asserts that the first argument is an instance of the second argument.
+
+    @param {any} arg1 The first value for instanceof assertion.
+    @param {Function} arg2 The second value for instanceof assertion.
+    @throws {error} An error is thrown if arg1 is not an instance of arg2.
+*/
+export function instance(arg1, arg2) {
+    expect(arg1).to.be.instance(arg2);
+}
+
+/**
+    Asserts that the provided values are of the same type.
+
+    @param {any} val1 The first value for type comparison.
+    @param {any} val2 The second value for type comparison.
+    @throws {error} An error is thrown if the types of the values are not equal.
+*/
+export function is(val1, val2) {
+    expect(val1).to.be.type(val2);
+}
+
+/**
+    Asserts that the provided value is a value (non-reference) type.
+
+    @param {any} value The value on which to check the assertion.
+    @returns {boolean} True, if the assertion passes.
+    @throws {error} An error is thrown if the assertion fails.
+*/
+
+export function throws(fn, errType = null) {
+    expect(fn).to.throw(errType);
+}
+
+export default {
+      empty
+    , equal
+    , 'equals': equal
+    , exists
+    , expect
+    , 'false': falsy
+    , falsy
+    , instance
+    , is
+    , nonEmpty
+    , 'ok': truthy
+    , throws
+    , 'true': truthy
+    , truthy
+};
