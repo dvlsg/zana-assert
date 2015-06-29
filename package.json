@@ -12,6 +12,10 @@
     "types",
     "classes"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dvlsg/zana-assert.git"
+  },
   "author": "Dave Lesage",
   "license": "MIT",
   "devDependencies": {
