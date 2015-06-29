@@ -1,6 +1,6 @@
 {
   "name": "zana-assert",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A library for making assertions on types, classes, instances, states, and statuses",
   "main": "dist/assert.js",
   "scripts": {
