@@ -14,15 +14,18 @@ var _createClass = require('babel-runtime/helpers/create-class')['default'];
 
 var _classCallCheck = require('babel-runtime/helpers/class-call-check')['default'];
 
+var _Object$defineProperty = require('babel-runtime/core-js/object/define-property')['default'];
+
 var _Symbol = require('babel-runtime/core-js/symbol')['default'];
 
 var _Symbol$toStringTag = require('babel-runtime/core-js/symbol/to-string-tag')['default'];
 
 var _interopRequireDefault = require('babel-runtime/helpers/interop-require-default')['default'];
 
-Object.defineProperty(exports, '__esModule', {
+_Object$defineProperty(exports, '__esModule', {
     value: true
 });
+
 exports.expect = expect;
 exports.truthy = truthy;
 exports.falsy = falsy;
@@ -67,20 +70,20 @@ var AssertionError = (function (_Error) {
         _get(Object.getPrototypeOf(AssertionError.prototype), 'constructor', this).call(this);
         if (Error.captureStackTrace && _zanaCheck2['default'].is(Error.captureStackTrace, Function)) Error.captureStackTrace(this, this.constructor);else {
             var stack = new Error().stack;
-            Object.defineProperty(this, 'stack', {
+            _Object$defineProperty(this, 'stack', {
                 value: stack
             });
         }
-        Object.defineProperty(this, 'message', {
+        _Object$defineProperty(this, 'message', {
             value: message
         });
         if (actual) {
-            Object.defineProperty(this, 'actual', {
+            _Object$defineProperty(this, 'actual', {
                 value: actual
             });
         }
         if (expected) {
-            Object.defineProperty(this, 'expected', {
+            _Object$defineProperty(this, 'expected', {
                 value: expected
             });
         }
@@ -90,12 +93,12 @@ var AssertionError = (function (_Error) {
 
     _createClass(AssertionError, [{
         key: 'name',
-        get: function get() {
+        get: function () {
             return this.constructor.name;
         }
     }, {
         key: _Symbol$toStringTag,
-        get: function get() {
+        get: function () {
             return 'AssertionError';
         }
     }]);
@@ -147,7 +150,7 @@ var Assertion = (function () {
         }
     }, {
         key: ASSERT_TYPE,
-        value: function value(type) {
+        value: function (type) {
             var name = _zanaCheck2['default'].isString(type) ? type : typename(type);
             this.message += ' ' + name + '!';
             this.expected = type;
@@ -282,32 +285,32 @@ var Assertion = (function () {
         }
     }, {
         key: 'not',
-        get: function get() {
+        get: function () {
             this.message += ' not';
             this.flipped = !this.flipped;
             return this;
         }
     }, {
         key: 'is',
-        get: function get() {
+        get: function () {
             this.message += ' is';
             return this;
         }
     }, {
         key: 'to',
-        get: function get() {
+        get: function () {
             this.message += ' to';
             return this;
         }
     }, {
         key: 'be',
-        get: function get() {
+        get: function () {
             this.message += ' be';
             return this;
         }
     }, {
         key: 'of',
-        get: function get() {
+        get: function () {
             this.message += ' of';
             return this;
         }
