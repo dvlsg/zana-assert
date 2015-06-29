@@ -6,12 +6,8 @@
 */
 "use strict";
 
-/* eslint no-unused-vars: 0 */
-
 import util from 'zana-util';
 import check from 'zana-check';
-
-let log = console.log.bind(console);
 
 let toString = Object.prototype.toString;
 let regexType = /\s([a-zA-Z]+)/;
@@ -28,7 +24,14 @@ export class AssertionError extends Error {
     // silly way of properly extending an error
     constructor({message, actual = null, expected = null}) {
         super();
-        Error.captureStackTrace(this, this.constructor);
+        if (Error.captureStackTrace && check.is(Error.captureStackTrace, Function))
+            Error.captureStackTrace(this, this.constructor);
+        else {
+            let stack = (new Error()).stack;
+            Object.defineProperty(this, 'stack', {
+                value: stack
+            });
+        }
         Object.defineProperty(this, 'message', {
             value: message
         });
@@ -202,7 +205,7 @@ export class Assertion {
                 passed = !!err;
                 this.message += ` throw an error!`;
                 this.actual = util.inspect(err);
-                this.expected = '[Error]';
+                this.expected = 'Error';
                 break;
             case util.types.string:
                 passed = err && err.message && err.message.indexOf(option) > -1;

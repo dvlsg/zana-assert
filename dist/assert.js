@@ -33,7 +33,6 @@ exports.exists = exists;
 exports.instance = instance;
 exports.is = is;
 exports.throws = throws;
-/* eslint no-unused-vars: 0 */
 
 var _zanaUtil = require('zana-util');
 
@@ -42,8 +41,6 @@ var _zanaUtil2 = _interopRequireDefault(_zanaUtil);
 var _zanaCheck = require('zana-check');
 
 var _zanaCheck2 = _interopRequireDefault(_zanaCheck);
-
-var log = console.log.bind(console);
 
 var toString = Object.prototype.toString;
 var regexType = /\s([a-zA-Z]+)/;
@@ -68,7 +65,12 @@ var AssertionError = (function (_Error) {
         _classCallCheck(this, AssertionError);
 
         _get(Object.getPrototypeOf(AssertionError.prototype), 'constructor', this).call(this);
-        Error.captureStackTrace(this, this.constructor);
+        if (Error.captureStackTrace && _zanaCheck2['default'].is(Error.captureStackTrace, Function)) Error.captureStackTrace(this, this.constructor);else {
+            var stack = new Error().stack;
+            Object.defineProperty(this, 'stack', {
+                value: stack
+            });
+        }
         Object.defineProperty(this, 'message', {
             value: message
         });
@@ -235,7 +237,7 @@ var Assertion = (function () {
                     passed = !!err;
                     this.message += ' throw an error!';
                     this.actual = _zanaUtil2['default'].inspect(err);
-                    this.expected = '[Error]';
+                    this.expected = 'Error';
                     break;
                 case _zanaUtil2['default'].types.string:
                     passed = err && err.message && err.message.indexOf(option) > -1;

@@ -3,8 +3,6 @@ import util from 'zana-util';
 import check from 'zana-check';
 let log = console.log.bind(log);
 
-import nodeassert from 'assert';
-
 describe('Assert', () => {
 
     describe('empty()', () => {
@@ -949,27 +947,6 @@ describe('Assert', () => {
 
         it('should pass for regex', () => {
             assert.true(/.*/);
-
-            // assert.false('true');
-            // assert.equal(true, false);
-
-            // let e = new Error();
-            // e.message = 'bob';
-            // e.expected = 'true';
-            // e.actual = 'false';
-            // throw e;
-            // throw new AssertionError({
-            //     message: 'bob',
-            //     expected: true,
-            //     actual: false
-            // });
-            // nodeassert.equal(true, false);
-            // try {
-                // nodeassert.equal(1, 2);
-            // }
-            // catch(e) {
-            //     log(e);
-            // }
         });
 
     });
