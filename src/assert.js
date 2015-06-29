@@ -24,7 +24,7 @@ export class AssertionError extends Error {
     // silly way of properly extending an error
     constructor({message, actual = null, expected = null}) {
         super();
-        if (Error.captureStackTrace && check.is(Error.captureStackTrace, Function))
+        if (Error.captureStackTrace && check.instance(Error.captureStackTrace, Function))
             Error.captureStackTrace(this, this.constructor);
         else {
             let stack = (new Error()).stack;
