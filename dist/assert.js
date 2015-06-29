@@ -68,7 +68,7 @@ var AssertionError = (function (_Error) {
         _classCallCheck(this, AssertionError);
 
         _get(Object.getPrototypeOf(AssertionError.prototype), 'constructor', this).call(this);
-        if (Error.captureStackTrace && _zanaCheck2['default'].is(Error.captureStackTrace, Function)) Error.captureStackTrace(this, this.constructor);else {
+        if (Error.captureStackTrace && _zanaCheck2['default'].instance(Error.captureStackTrace, Function)) Error.captureStackTrace(this, this.constructor);else {
             var stack = new Error().stack;
             _Object$defineProperty(this, 'stack', {
                 value: stack
