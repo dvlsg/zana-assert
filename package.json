@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "babel-runtime": "^5.5.8",
-    "zana-check": "^0.1.0",
-    "zana-util": "^0.1.2"
+    "zana-check": "^0.1.1",
+    "zana-util": "^0.1.4"
   }
 }
