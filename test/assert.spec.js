@@ -1,7 +1,8 @@
-import assert, {expect, AssertionError, Assert} from '../src/assert.js';
-import util from 'zana-util';
-import check from 'zana-check';
-let log = console.log.bind(log);
+const assert = require('../');
+const { expect, AssertionError, Assert } = assert;
+const util = require('zana-util');
+const check = require('zana-check');
+let log = console.log.bind(console);
 
 describe('Assert', () => {
 

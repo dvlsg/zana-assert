@@ -6,8 +6,9 @@
 */
 "use strict";
 
-import util from 'zana-util';
-import check from 'zana-check';
+const { getType, types, equals } = require('zana-util');
+const check = require('zana-check');
+const { inspect } = require('util');
 
 let toString = Object.prototype.toString;
 let regexType = /\s([a-zA-Z]+)/;
@@ -19,9 +20,10 @@ let typename = (item) => {
 
 let ASSERT_TYPE = Symbol('assert_type');
 
-export class AssertionError extends Error {
+class AssertionError extends Error {
 
     // silly way of properly extending an error
+    // (note: this actually works in Node v6, we could simplify quite a bit)
     constructor({message, actual = null, expected = null}) {
         super();
         if (Error.captureStackTrace && check.instance(Error.captureStackTrace, Function))
@@ -56,14 +58,7 @@ export class AssertionError extends Error {
     }
 }
 
-export class Assertion {
-
-    given: any;
-    expected: any;
-    received: any;
-    test: Function;
-    flipped: boolean;
-    message: string;
+class Assertion {
 
     constructor({
           given
@@ -75,7 +70,7 @@ export class Assertion {
         this.message = message; // override if necessary? considering dropping
         this.actual = given;
         if (!this.message)
-            this.message = `Expected ${util.inspect(this.actual)}`;
+            this.message = `Expected ${inspect(this.actual)}`;
         this.test = test;
         this.expected = expected;
         this.flipped = flipped;
@@ -107,22 +102,22 @@ export class Assertion {
         return this;
     }
 
-    a(type: any) {
+    a(type) {
         this.message += ' a';
         this[ASSERT_TYPE](type);
     }
 
-    an(type: any) {
+    an(type) {
         this.message += ' an';
         this[ASSERT_TYPE](type);
     }
 
-    type(type: any) {
+    type(type) {
         this.message += ' type';
         this[ASSERT_TYPE](type);
     }
 
-    [ASSERT_TYPE](type: any) {
+    [ASSERT_TYPE](type) {
         let name = check.isString(type) ? type : typename(type);
         this.message += ` ${name}!`;
         this.expected = type;
@@ -130,13 +125,13 @@ export class Assertion {
         if (!passed) {
             throw new AssertionError({
                   message  : this.message
-                , actual   : util.inspect(this.actual)
+                , actual   : inspect(this.actual)
                 , expected : name // tbd if this is right
             });
         }
     }
 
-    instance(type: any) {
+    instance(type) {
         this.message += ` instance of ${typename(type)}!`;
         this.expected = type;
         if (!check.instance(this.actual, this.expected) ^ this.flipped) {
@@ -198,22 +193,22 @@ export class Assertion {
         catch(caught) {
             err = caught;
         }
-        let type = util.getType(option);
+        let type = getType(option);
         switch (type) {
-            case util.types.undefined:
-            case util.types.null:
+            case types.undefined:
+            case types.null:
                 passed = !!err;
                 this.message += ` throw an error!`;
-                this.actual = util.inspect(err);
+                this.actual = inspect(err);
                 this.expected = 'Error';
                 break;
-            case util.types.string:
+            case types.string:
                 passed = err && err.message && err.message.indexOf(option) > -1;
-                this.message += ` throw an error with a message containing ${util.inspect(option)}`;
+                this.message += ` throw an error with a message containing ${inspect(option)}`;
                 this.actual = err;
-                this.expected = util.inspect(option);
+                this.expected = inspect(option);
                 break;
-            case util.types.regexp:
+            case types.regexp:
                 passed = err && err.message && option.test(err.message);
                 this.message += ` throw an error matching regex ${option}!`;
                 this.actual = err;
@@ -236,14 +231,14 @@ export class Assertion {
     }
 
     equal(target) {
-        this.message += ` equal ${util.inspect(target)}!`;
+        this.message += ` equal ${inspect(target)}!`;
         this.expected = target;
-        let passed = util.equals(this.actual, this.expected);
+        let passed = equals(this.actual, this.expected);
         if (!(passed ^ this.flipped)) {
             throw new AssertionError({
                   message  : this.message
-                , actual   : util.inspect(this.actual)
-                , expected : util.inspect(this.expected)
+                , actual   : inspect(this.actual)
+                , expected : inspect(this.expected)
             });
         }
     }
@@ -254,7 +249,7 @@ export class Assertion {
 
     @param {any} val The value to attach to the assertion.
 */
-export function expect(val) {
+function expect(val) {
     return new Assertion({
         given : val
     });
@@ -266,7 +261,7 @@ export function expect(val) {
     @param {any} val The value for falsy comparison.
     @throws {error} An error is thrown if the values are not equal.
 */
-export function truthy(val) {
+function truthy(val) {
     expect(val).to.be.true();
 }
 
@@ -276,7 +271,7 @@ export function truthy(val) {
     @param {any} val The value for falsy comparison.
     @throws {error} An error is thrown if the values was not falsy.
 */
-export function falsy(val) {
+function falsy(val) {
     expect(val).to.be.false();
 }
 
@@ -287,7 +282,7 @@ export function falsy(val) {
     @param {any} val2 The second value for equality comparison.
     @throws {error} An error is thrown if the values are not equal.
 */
-export function equal(val1, val2) {
+function equal(val1, val2) {
     expect(val1).to.equal(val2);
 }
 
@@ -297,7 +292,7 @@ export function equal(val1, val2) {
     @param {any} value The value on which to check the assertion.
     @throws {error} An error is thrown if the assertion fails.
 */
-export function empty(value) {
+function empty(value) {
     expect(value).to.be.empty();
 }
 
@@ -307,7 +302,7 @@ export function empty(value) {
     @param {any} value The value on which to check the assertion.
     @throws {error} An error is thrown if the assertion fails.
 */
-export function nonEmpty(value) {
+function nonEmpty(value) {
     expect(value).to.not.be.empty();
 }
 
@@ -317,7 +312,7 @@ export function nonEmpty(value) {
     @param {any} value The value to check for null or undefined values.
     @throws {error} An error is thrown if the value is equal to null or undefined.
 */
-export function exists(value) {
+function exists(value) {
     expect(value).to.exist();
 }
 
@@ -328,7 +323,7 @@ export function exists(value) {
     @param {Function} arg2 The second value for instanceof assertion.
     @throws {error} An error is thrown if arg1 is not an instance of arg2.
 */
-export function instance(arg1, arg2) {
+function instance(arg1, arg2) {
     expect(arg1).to.be.instance(arg2);
 }
 
@@ -339,7 +334,7 @@ export function instance(arg1, arg2) {
     @param {any} val2 The second value for type comparison.
     @throws {error} An error is thrown if the types of the values are not equal.
 */
-export function is(val1, val2) {
+function is(val1, val2) {
     expect(val1).to.be.type(val2);
 }
 
@@ -351,23 +346,25 @@ export function is(val1, val2) {
     @throws {error} An error is thrown if the assertion fails.
 */
 
-export function throws(fn, errType = null) {
+function throws(fn, errType = null) {
     expect(fn).to.throw(errType);
 }
 
-export default {
-      empty
+module.exports = {
+      Assertion
+    , AssertionError
+    , empty
     , equal
-    , 'equals': equal
+    , equals: equal
     , exists
     , expect
-    , 'false': falsy
+    , false: falsy
     , falsy
     , instance
     , is
     , nonEmpty
-    , 'ok': truthy
+    , ok: truthy
     , throws
-    , 'true': truthy
+    , true: truthy
     , truthy
 };
